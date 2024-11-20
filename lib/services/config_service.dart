@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
 class ConfigService {
-static const String configDir = 'configurations';
+static const String configDir = 'configurations'; // C:\Users\aethe\Documents\configurations
   
   static Future<String> get _configPath async {
     final appDir = await getApplicationDocumentsDirectory();
@@ -88,7 +88,7 @@ static const String configDir = 'configurations';
     final configs = await getAvailableConfigs();
     
     if (configs.isEmpty) {
-      // Load and save default configurations from assets
+      // Load and save default configurations from assets. THESE ARE NOT SAVED IN THE CONFIG PATH! YOU CAN'T EDIT THEM THROUGH THE APP!
       try {
         // Load forJake config
         final String forJakeJson = await rootBundle.loadString('assets/configs/forJake.json');

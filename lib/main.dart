@@ -23,6 +23,7 @@ class MP3TaggerApp extends StatelessWidget {
     return MaterialApp(
       title: 'MP3 Tagger',
       theme: ThemeData.dark(),
+      debugShowCheckedModeBanner: false,
       home: const MP3TaggerHome(),
     );
   }
@@ -80,6 +81,8 @@ class _MP3TaggerHomeState extends State<MP3TaggerHome> {
   void _loadConfig(List<Map<String, dynamic>> config) {
     setState(() {
       sections = config.map((data) => SectionModel.fromJson(data)).toList();
+      // sort sections by label, case insensitive
+      sections.sort((a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
     });
     _updateFilter();
   }
@@ -171,6 +174,8 @@ Widget _buildConfigTools() {
           currentConfig = currentConfig;
           // Load the actual config data
           sections = configData.map((data) => SectionModel.fromJson(data)).toList();
+          // sort sections by label, case insensitive
+      sections.sort((a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
         });
         _updateFilter();
       },
@@ -278,6 +283,7 @@ Widget _buildConfigTools() {
   final ScrollController horizontalScrollController = ScrollController();
 
   return Scaffold(
+    
     appBar: AppBar(
       title: const Text('MP3 Tagger'),
       actions: [
