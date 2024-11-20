@@ -328,7 +328,7 @@ Expanded(
           
           // Fixed-width control panel
           SizedBox(
-            width: 400,
+            width: 300,
             child: _buildControlPanel(),
           ),
         ],

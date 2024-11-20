@@ -27,6 +27,30 @@ class ThreeStateToggle extends StatelessWidget {
     }
   }
 
+
+  Color get activeTrackColor {
+    switch (value) {
+      case ScaleValue.on:
+        return trackColor; // Green
+      case ScaleValue.neutral:
+        return middleColor;
+      case ScaleValue.off:
+        return middleColor;
+    }
+  }
+
+  Color get inactiveTrackColor {
+    switch (value) {
+      case ScaleValue.on:
+        return middleColor;
+      case ScaleValue.neutral:
+        return middleColor;
+      case ScaleValue.off:
+        return trackColor; // Red
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -39,13 +63,13 @@ class ThreeStateToggle extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(label, style: paramTextStyle),
             ),
-          SliderTheme(
-            data: SliderThemeData(
-              trackHeight: 4,
-              activeTrackColor: trackColor,
-              inactiveTrackColor: middleColor,
-              thumbColor: Colors.white,
-            ),
+         SliderTheme(
+        data: SliderThemeData(
+          trackHeight: 4,
+          activeTrackColor: activeTrackColor,
+          inactiveTrackColor: inactiveTrackColor,
+          thumbColor: Colors.white,
+        ),
             child: Slider(
               value: value.value.toDouble(),
               min: 0,
