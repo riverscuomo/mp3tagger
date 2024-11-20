@@ -1,0 +1,166 @@
+[
+  {
+    "group_control": 1,
+    "label": "cowriter",
+    "scales": [
+      [
+        "None",
+        2
+      ],
+      [
+        "track",
+        1
+      ],
+      [
+        "cowriter",
+        1
+      ]
+    ]
+  },
+  {
+    "group_control": 1,
+    "label": "composer",
+    "scales": [
+      [
+        "Rivers Cuomo",
+        2
+      ]
+    ]
+  },
+  {
+    "group_control": 1,
+    "label": "jd",
+    "scales": [
+      [
+        "5",
+        1
+      ],
+      [
+        "4",
+        1
+      ],
+      [
+        "3",
+        1
+      ],
+      [
+        "2",
+        1
+      ],
+      [
+        "1",
+        1
+      ]
+    ]
+  },
+  {
+    "group_control": 1,
+    "label": "Genesis",
+    "scales": [
+      [
+        "piano",
+        1
+      ],
+      [
+        "track",
+        1
+      ],
+      [
+        "aku",
+        1
+      ],
+      [
+        "dist",
+        1
+      ],
+      [
+        "melody",
+        1
+      ],
+      [
+        "clean",
+        1
+      ],
+      [
+        "lyric-piano",
+        0
+      ],
+      [
+        "lyric",
+        0
+      ],
+      [
+        "title",
+        0
+      ],
+      [
+        "mouth",
+        0
+      ],
+      [
+        "beat",
+        0
+      ]
+    ]
+  },
+  {
+    "group_control": 1,
+    "label": "Masterpiece",
+    "scales": [
+      [
+        "5",
+        1
+      ],
+      [
+        "4",
+        1
+      ],
+      [
+        "3",
+        1
+      ],
+      [
+        "2",
+        0
+      ],
+      [
+        "1",
+        0
+      ]
+    ]
+  },
+  {
+    "group_control": 1,
+    "label": "%_folderpath%",
+    "scales": [
+      [
+        "ideas",
+        0
+      ],
+      [
+        "solo",
+        0
+      ],
+      [
+        "covers",
+        0
+      ],
+      [
+        "previous",
+        0
+      ],
+      [
+        "hold",
+        0
+      ],
+      [
+        "The Pink Album",
+        0
+      ],
+      [
+        "beats",
+        0
+      ]
+    ]
+  }
+]

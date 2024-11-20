@@ -1,3 +1,19 @@
+python/__pycache__/
+python/*.pyc
+python/.pytest_cache/
+python/.G
+python/.9
+python/.1
+
+python/build/
+
+# We can ignore dist since your exe is in assets
+python/dist/
+
+
+.env
+.vscode/
+
 # Miscellaneous
 *.class
 *.log

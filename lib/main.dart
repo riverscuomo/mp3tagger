@@ -1,125 +1,341 @@
 import 'package:flutter/material.dart';
+import 'package:mp3tagger/services/config_service.dart';
+import 'package:mp3tagger/widgets/config_manager.dart';
+import 'dart:io';
+import 'package:process_run/process_run.dart';
+import 'constants.dart';
+import 'sections.dart';
+import 'models/section_model.dart';
+import 'widgets/custom_slider.dart';
+import 'widgets/section_widget.dart';
+import 'services/mp3tag_service.dart';
 
 void main() {
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const MP3TaggerApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MP3TaggerApp extends StatelessWidget {
+  const MP3TaggerApp({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      title: 'MP3 Tagger',
+      theme: ThemeData.dark(),
+      home: const MP3TaggerHome(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class MP3TaggerHome extends StatefulWidget {
+  const MP3TaggerHome({Key? key}) : super(key: key);
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _MP3TaggerHomeState createState() => _MP3TaggerHomeState();
 }
+class _MP3TaggerHomeState extends State<MP3TaggerHome> {
+    final TextEditingController _filterController = TextEditingController();
+  final List<double> _bpmRange = [80, 100];
+  bool _includeBpm = true;
+  bool _excludeHold = true;
+  bool _excludeDeselect = true;
+  late List<SectionModel> sections = [];
+  String currentConfig = 'forJake';  // Default config
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
 
-  void _incrementCounter() {
+  Future<void> _initializeApp() async {
+    await ConfigService.initializeDefaultConfigs();
+    final config = await ConfigService.loadConfig(currentConfig);
+    _loadConfig(config);
+    await _launchMp3Tag();
+  }
+
+  Future<void> _launchMp3Tag() async {
+    final mp3TagPath = Platform.environment['MP3TAG_PATH'];
+    if (mp3TagPath != null) {
+      try {
+        await Process.start(mp3TagPath, []);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to launch MP3Tag: $e')),
+          );
+        }
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('MP3TAG_PATH environment variable not set')),
+        );
+      }
+    }
+  }
+
+  void _loadConfig(List<Map<String, dynamic>> config) {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      sections = config.map((data) => SectionModel.fromJson(data)).toList();
+    });
+    _updateFilter();
+  }
+
+  Future<void> _saveCurrentConfig() async {
+    final configData = sections.map((section) => section.toJson()).toList();
+    await ConfigService.saveConfig(currentConfig, configData);
+  }
+
+  @override
+  void dispose() {
+    _filterController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _launchMP3Tag() async {
+    final mp3TagPath = Platform.environment['MP3TAG_PATH'];
+    if (mp3TagPath != null) {
+      try {
+        await Process.start(mp3TagPath, []);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to launch MP3Tag: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  String getBpmFilter(List<double> bpmRange) {
+    return MP3TagService.getBpmFilter(bpmRange);
+  }
+
+  String getFilterFromSection(String currentFilter, SectionModel section, bool controlTogglePressed) {
+    return currentFilter + section.getFilter(controlTogglePressed: controlTogglePressed);
+  }
+
+  String cleanFilter(String filter) {
+    return MP3TagService.cleanFilter(filter);
+  }
+
+  void _updateFilter() {
+    String filter = '';
+    
+    if (_includeBpm) {
+      filter = getBpmFilter(_bpmRange);
+    }
+
+    for (var section in sections) {
+      filter = getFilterFromSection(filter, section, false);
+    }
+
+    filter = cleanFilter(filter);
+    filter = filter.replaceAll(' AND ', '\n');
+
+    setState(() {
+      _filterController.text = filter;
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+  Future<void> _applyFilter() async {
+    String filter = _filterController.text.replaceAll('\n', ' AND ');
+    if (_excludeHold) {
+      filter += ' AND HOLD ABSENT';
+    }
+    if (_excludeDeselect) {
+      filter += ' AND DESELECT ABSENT';
+    }
+    
+    try {
+      await MP3TagService.applyFilter(filter);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
+
+
+Widget _buildConfigTools() {
+    return ConfigManager(
+      currentConfig: currentConfig,  // This is just the name (String)
+      onConfigLoaded: (configData) {
+        setState(() {
+          // Update the current config name
+          currentConfig = currentConfig;
+          // Load the actual config data
+          sections = configData.map((data) => SectionModel.fromJson(data)).toList();
+        });
+        _updateFilter();
+      },
     );
   }
+
+  Widget _buildControlPanel() {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 300, maxWidth: 600),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('BPM Range', style: headerTextStyle),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: 600,
+            child: CustomSlider(
+              values: _bpmRange,
+              min: 55,
+              max: 140,
+              onChanged: (values) {
+                setState(() {
+                  _bpmRange[0] = values[0];
+                  _bpmRange[1] = values[1];
+                });
+                _updateFilter();
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildCheckbox(
+            'Include BPM',
+            _includeBpm,
+            (value) => setState(() {
+              _includeBpm = value ?? false;
+              _updateFilter();
+            }),
+          ),
+          _buildCheckbox(
+            'Exclude Hold',
+            _excludeHold,
+            (value) => setState(() {
+              _excludeHold = value ?? false;
+              _updateFilter();
+            }),
+          ),
+          _buildCheckbox(
+            'Exclude Deselect',
+            _excludeDeselect,
+            (value) => setState(() {
+              _excludeDeselect = value ?? false;
+              _updateFilter();
+            }),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _applyFilter,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF476B6B),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            ),
+            child: const Text(
+              'FILTER',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: 600,
+            child: TextField(
+              controller: _filterController,
+              maxLines: 8,
+              style: filterTextStyle,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Color(0xFF444444),
+                contentPadding: EdgeInsets.all(16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCheckbox(String label, bool value, ValueChanged<bool?> onChanged) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: CheckboxListTile(
+        title: Text(label, style: paramTextStyle),
+        value: value,
+        onChanged: onChanged,
+        controlAffinity: ListTileControlAffinity.leading,
+        dense: true,
+        contentPadding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+      ),
+    );
+  }
+
+ @override
+  Widget build(BuildContext context) {
+  final ScrollController verticalScrollController = ScrollController();
+  final ScrollController horizontalScrollController = ScrollController();
+
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('MP3 Tagger'),
+      actions: [
+        _buildConfigTools(),
+      ],
+    ),
+    body: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Scrollable sections with both vertical and horizontal scrolling
+Expanded(
+  child: Scrollbar(
+    controller: verticalScrollController,
+    thumbVisibility: true,
+    thickness: 16.0, // Windows-style thickness
+    child: SingleChildScrollView(
+      controller: verticalScrollController,
+      scrollDirection: Axis.vertical,
+      child: Scrollbar(
+        controller: horizontalScrollController,
+        thumbVisibility: true,
+        thickness: 16.0, // Windows-style thickness
+        child: SingleChildScrollView(
+          controller: horizontalScrollController,
+          scrollDirection: Axis.horizontal,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...sections.map((section) => SectionWidget(
+                      section: section,
+                      onChanged: _updateFilter,
+                    )),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  ),
+),
+
+          
+          // Fixed spacing between sections and control panel
+          const SizedBox(width: 32),
+          
+          // Fixed-width control panel
+          SizedBox(
+            width: 400,
+            child: _buildControlPanel(),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+
 }
