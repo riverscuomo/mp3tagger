@@ -6,11 +6,13 @@ import '../services/config_service.dart';
 class ConfigManager extends StatefulWidget {
   final String currentConfig;
   final Function(List<Map<String, dynamic>>) onConfigLoaded;
+  final VoidCallback onSaveConfig; // Add this parameter
 
   const ConfigManager({
     super.key,
     required this.currentConfig,
     required this.onConfigLoaded,
+    required this.onSaveConfig, // Initialize it in the constructor
   });
 
   @override
@@ -36,18 +38,18 @@ class _ConfigManagerState extends State<ConfigManager> {
     });
   }
 
-  Future<void> _saveCurrentConfig(List<Map<String, dynamic>> config) async {
-    try {
-      await ConfigService.saveConfig(_selectedConfig, config);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Configuration saved successfully')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving configuration: $e')),
-      );
-    }
-  }
+  // Future<void> _saveCurrentConfig(List<Map<String, dynamic>> config) async {
+  //   try {
+  //     await ConfigService.saveConfig(_selectedConfig, config);
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text('Configuration saved successfully')),
+  //     );
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Error saving configuration: $e')),
+  //     );
+  //   }
+  // }
 
   Future<void> _createNewConfig(String name) async {
     if (name.isEmpty) return;
@@ -130,8 +132,7 @@ class _ConfigManagerState extends State<ConfigManager> {
         IconButton(
           icon: const Icon(Icons.save),
           onPressed: () {
-            // You'll need to pass the current configuration here
-            // _saveCurrentConfig(currentConfig);
+            widget.onSaveConfig(); // Use the passed callback
           },
         ),
         IconButton(

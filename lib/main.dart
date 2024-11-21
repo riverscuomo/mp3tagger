@@ -87,10 +87,29 @@ class _MP3TaggerHomeState extends State<MP3TaggerHome> {
     _updateFilter();
   }
 
-  Future<void> _saveCurrentConfig() async {
-    final configData = sections.map((section) => section.toJson()).toList();
-    await ConfigService.saveConfig(currentConfig, configData);
-  }
+// This method now handles saving the current configuration
+Future<void> _saveCurrentConfig() async {
+  final configData = sections.map((section) => section.toJson()).toList();
+  await ConfigService.saveConfig(currentConfig, configData);
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Configuration saved successfully')),
+  );
+}
+
+Widget _buildConfigTools() {
+  return ConfigManager(
+    currentConfig: currentConfig,
+    onConfigLoaded: (configData) {
+      setState(() {
+        currentConfig = currentConfig;
+        sections = configData.map((data) => SectionModel.fromJson(data)).toList();
+        sections.sort((a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
+      });
+      _updateFilter();
+    },
+    onSaveConfig: _saveCurrentConfig, // Pass the save method as a callback
+  );
+}
 
   @override
   void dispose() {
@@ -165,22 +184,22 @@ class _MP3TaggerHomeState extends State<MP3TaggerHome> {
   }
 
 
-Widget _buildConfigTools() {
-    return ConfigManager(
-      currentConfig: currentConfig,  // This is just the name (String)
-      onConfigLoaded: (configData) {
-        setState(() {
-          // Update the current config name
-          currentConfig = currentConfig;
-          // Load the actual config data
-          sections = configData.map((data) => SectionModel.fromJson(data)).toList();
-          // sort sections by label, case insensitive
-      sections.sort((a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
-        });
-        _updateFilter();
-      },
-    );
-  }
+// Widget _buildConfigTools() {
+//     return ConfigManager(
+//       currentConfig: currentConfig,  // This is just the name (String)
+//       onConfigLoaded: (configData) {
+//         setState(() {
+//           // Update the current config name
+//           currentConfig = currentConfig;
+//           // Load the actual config data
+//           sections = configData.map((data) => SectionModel.fromJson(data)).toList();
+//           // sort sections by label, case insensitive
+//       sections.sort((a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
+//         });
+//         _updateFilter();
+//       },
+//     );
+//   }
 
   Widget _buildControlPanel() {
     return Container(
