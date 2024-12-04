@@ -1,8 +1,6 @@
 // models/section_model.dart
 
-import 'package:flutter/material.dart';// models/section_model.dart
-
-
+import 'package:flutter/material.dart'; // models/section_model.dart
 
 enum ScaleValue {
   off(0),
@@ -32,7 +30,9 @@ class ScaleItem {
     value = newValue;
     troughColor = _getColorForValue(newValue);
   }
-
+  void updateLabel(String newLabel) {
+    label = newLabel;
+  }
   static Color _getColorForValue(ScaleValue value) {
     switch (value) {
       case ScaleValue.on:
@@ -91,7 +91,8 @@ class SectionModel {
   Map<String, dynamic> toJson() {
     return {
       'label': label,
-      'scales': scales.map((scale) => [scale.label, scale.value.value]).toList(),
+      'scales':
+          scales.map((scale) => [scale.label, scale.value.value]).toList(),
       'no_blanks': noBlanks,
       'group_control': groupControl.value,
     };
@@ -128,14 +129,30 @@ class SectionModel {
 
     String filter = '';
     if (positiveFilters.isNotEmpty) {
-      filter += '($label MATCHES ${positiveFilters.join('|')})';
-      filter += noBlanks ? ') AND ' : ' OR $label ABSENT) AND ';
+      // Group the positive filters and ensure proper parentheses
+      filter += noBlanks
+          ? '($label MATCHES ${positiveFilters.join('|')}) AND '
+          : '((($label MATCHES ${positiveFilters.join('|')}) OR ($label ABSENT))) AND ';
     }
-    
+
     if (negativeFilters.isNotEmpty) {
+      // Group negative filters properly
       filter += '(NOT $label MATCHES ${negativeFilters.join('|')}) AND ';
     }
 
     return filter;
   }
+  
+  void addScale(ScaleItem scale) {
+    scales.add(scale);
+  }
+
+  void removeScale(ScaleItem scale) {
+    scales.remove(scale);
+  }
+
+  void updateLabel(String newLabel) {
+    label = newLabel;
+  }
+
 }

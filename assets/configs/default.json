@@ -1,0 +1,232 @@
+{
+    "sections": [
+        {
+            "label": "%_folderpath%",
+            "scales": [
+                [
+                    "ideas",
+                    1
+                ],
+                [
+                    "solo",
+                    0
+                ],
+                [
+                    "covers",
+                    0
+                ],
+                [
+                    "previous",
+                    0
+                ],
+                [
+                    "hold",
+                    0
+                ],
+                [
+                    "Boxify",
+                    0
+                ],
+                [
+                    "beats",
+                    0
+                ]
+            ],
+            "no_blanks": false,
+            "group_control": 1
+        },
+        {
+            "label": "cowriter",
+            "scales": [
+                [
+                    "x",
+                    0
+                ]
+            ],
+            "no_blanks": false,
+            "group_control": 1
+        },
+        {
+            "label": "Genesis",
+            "scales": [
+                [
+                    "piano",
+                    1
+                ],
+                [
+                    "track",
+                    0
+                ],
+                [
+                    "aku",
+                    1
+                ],
+                [
+                    "dist",
+                    1
+                ],
+                [
+                    "melody",
+                    0
+                ],
+                [
+                    "clean",
+                    1
+                ],
+                [
+                    "lyric-piano",
+                    0
+                ],
+                [
+                    "lyric",
+                    0
+                ],
+                [
+                    "title",
+                    0
+                ],
+                [
+                    "mouth",
+                    0
+                ],
+                [
+                    "beat",
+                    0
+                ]
+            ],
+            "no_blanks": false,
+            "group_control": 1
+        },
+        {
+            "label": "jd",
+            "scales": [
+                [
+                    "5",
+                    1
+                ],
+                [
+                    "4",
+                    1
+                ],
+                [
+                    "3",
+                    1
+                ],
+                [
+                    "2",
+                    1
+                ],
+                [
+                    "1",
+                    1
+                ]
+            ],
+            "no_blanks": false,
+            "group_control": 1
+        },
+        {
+            "label": "Masterpiece",
+            "scales": [
+                [
+                    "5",
+                    1
+                ],
+                [
+                    "4",
+                    1
+                ],
+                [
+                    "3",
+                    1
+                ],
+                [
+                    "2",
+                    1
+                ],
+                [
+                    "1",
+                    0
+                ]
+            ],
+            "no_blanks": false,
+            "group_control": 1
+        },
+        {
+            "label": "Mode",
+            "scales": [
+                [
+                    "minor",
+                    1
+                ],
+                [
+                    "major",
+                    1
+                ],
+                [
+                    "mixo",
+                    1
+                ],
+                [
+                    "mixed",
+                    1
+                ],
+                [
+                    "phrygian",
+                    1
+                ],
+                [
+                    "lydian",
+                    1
+                ]
+            ],
+            "no_blanks": false,
+            "group_control": 1
+        },
+        {
+            "label": "Section",
+            "scales": [
+                [
+                    "chorus",
+                    1
+                ],
+                [
+                    "verse",
+                    1
+                ],
+                [
+                    "pre",
+                    1
+                ],
+                [
+                    "post",
+                    1
+                ],
+                [
+                    "bridge",
+                    1
+                ],
+                [
+                    "instr",
+                    1
+                ],
+                [
+                    "riff",
+                    1
+                ],
+                [
+                    "beat",
+                    0
+                ]
+            ],
+            "no_blanks": false,
+            "group_control": 1
+        }
+    ],
+    "bpmRange": [
+        80.0,
+        100.0
+    ],
+    "includeBpm": true,
+    "excludeHold": true,
+    "excludeDeselect": true
+}

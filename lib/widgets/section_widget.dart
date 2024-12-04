@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/section_model.dart';
 import '../constants.dart';
-
 class ThreeStateToggle extends StatelessWidget {
   final ScaleValue value;
   final String label;
@@ -9,12 +8,12 @@ class ThreeStateToggle extends StatelessWidget {
   final bool isControl;
 
   const ThreeStateToggle({
-    super.key,
+    Key? key,
     required this.value,
     required this.label,
     required this.onChanged,
     this.isControl = false,
-  });
+  }) : super(key: key);
 
   Color get trackColor {
     switch (value) {
@@ -26,7 +25,6 @@ class ThreeStateToggle extends StatelessWidget {
         return Colors.deepOrange[700]!;
     }
   }
-
 
   Color get activeTrackColor {
     switch (value) {
@@ -50,34 +48,41 @@ class ThreeStateToggle extends StatelessWidget {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: scaleWidth,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (!isControl && label.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(label, style: paramTextStyle),
+            Text(
+              label,
+              style: paramTextStyle.copyWith(height: 1.0),
+              textAlign: TextAlign.center,
             ),
-         SliderTheme(
-        data: SliderThemeData(
-          trackHeight: 4,
-          activeTrackColor: activeTrackColor,
-          inactiveTrackColor: inactiveTrackColor,
-          thumbColor: Colors.white,
-        ),
-            child: Slider(
-              value: value.value.toDouble(),
-              min: 0,
-              max: 2,
-              divisions: 2,
-              onChanged: (double newValue) {
-                onChanged(ScaleValue.fromInt(newValue.toInt()));
-              },
+          // Reduce vertical spacing between label and slider
+          const SizedBox(height: 2), // Adjust height as needed
+          // Use Transform to adjust slider position
+          Transform.translate(
+            offset: const Offset(0, -8), // Move slider up by 8 pixels
+            child: SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 4,
+                activeTrackColor: activeTrackColor,
+                inactiveTrackColor: inactiveTrackColor,
+                thumbColor: Colors.white,
+                thumbShape:  SquareThumbShape(thumbSize: 14.0),
+              ),
+              child: Slider(
+                value: value.value.toDouble(),
+                min: 0,
+                max: 2,
+                divisions: 2,
+                onChanged: (double newValue) {
+                  onChanged(ScaleValue.fromInt(newValue.toInt()));
+                },
+              ),
             ),
           ),
         ],
@@ -86,27 +91,68 @@ class ThreeStateToggle extends StatelessWidget {
   }
 }
 
+
+class SquareThumbShape extends SliderComponentShape {
+  final double thumbSize;
+
+  SquareThumbShape({this.thumbSize = 12.0});
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) {
+    return Size(thumbSize, thumbSize);
+  }
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    final Paint paint = Paint()
+      ..color = sliderTheme.thumbColor ?? Colors.blue
+      ..style = PaintingStyle.fill;
+
+    final Rect thumbRect = Rect.fromCenter(
+      center: center,
+      width: thumbSize,
+      height: thumbSize,
+    );
+
+    context.canvas.drawRect(thumbRect, paint);
+  }
+}
+
+
 class SectionWidget extends StatefulWidget {
   final SectionModel section;
   final VoidCallback onChanged;
 
   const SectionWidget({
-    super.key,
+    Key? key,
     required this.section,
     required this.onChanged,
-  });
+  }) : super(key: key);
 
   @override
   State<SectionWidget> createState() => _SectionWidgetState();
 }
 
 class _SectionWidgetState extends State<SectionWidget> {
-  static const double sectionWidth = 125.0;  // Fixed width for the section
+  static const double sectionWidth = 125.0; // Fixed width for the section
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: sectionWidth,  // Fixed width container
+      width: sectionWidth, // Fixed width container
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.only(right: 16),
       decoration: BoxDecoration(
@@ -114,7 +160,7 @@ class _SectionWidgetState extends State<SectionWidget> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildControlToggle(),
@@ -122,16 +168,15 @@ class _SectionWidgetState extends State<SectionWidget> {
           Text(widget.section.label, style: headerTextStyle),
           _buildNoBlanksCheckbox(),
           const Divider(height: 16, color: middleColor),
-          ...widget.section.scales.map(_buildScale).skip(1), // Skip control toggle
+          ...widget.section.scales.map(_buildScale), // Include all scales
         ],
       ),
     );
   }
 
   Widget _buildControlToggle() {
-    var controlScale = widget.section.scales[0];
     return ThreeStateToggle(
-      value: controlScale.value,
+      value: widget.section.groupControl,
       label: '*',
       isControl: true,
       onChanged: (newValue) {
@@ -159,7 +204,7 @@ class _SectionWidgetState extends State<SectionWidget> {
 
   Widget _buildNoBlanksCheckbox() {
     return SizedBox(
-      width: sectionWidth - 32,  // Account for parent padding
+      width: sectionWidth - 32, // Account for parent padding
       child: Row(
         children: [
           SizedBox(

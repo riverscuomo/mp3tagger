@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mp3tagger/services/config_service.dart';
+import 'package:mp3tagger/widgets/config_editor.dart';
 import 'package:mp3tagger/widgets/config_manager.dart';
 import 'dart:io';
 import 'package:process_run/process_run.dart';
@@ -35,14 +36,15 @@ class MP3TaggerHome extends StatefulWidget {
   @override
   _MP3TaggerHomeState createState() => _MP3TaggerHomeState();
 }
+
 class _MP3TaggerHomeState extends State<MP3TaggerHome> {
-    final TextEditingController _filterController = TextEditingController();
+  final TextEditingController _filterController = TextEditingController();
   final List<double> _bpmRange = [80, 100];
   bool _includeBpm = true;
   bool _excludeHold = true;
   bool _excludeDeselect = true;
   late List<SectionModel> sections = [];
-  String currentConfig = 'forJake';  // Default config
+  String currentConfig = 'default'; // Default config
 
   @override
   void initState() {
@@ -50,12 +52,33 @@ class _MP3TaggerHomeState extends State<MP3TaggerHome> {
     _initializeApp();
   }
 
-  Future<void> _initializeApp() async {
-    await ConfigService.initializeDefaultConfigs();
+// main.dart
+
+Future<void> _initializeApp() async {
+  // Ensure config directory exists
+  await ConfigService.ensureConfigDirectoryExists();
+
+  // Try to get the last modified config
+  String? lastConfigName = await ConfigService.getLastModifiedConfigName();
+
+  if (lastConfigName != null && lastConfigName.isNotEmpty) {
+    setState(() {
+      currentConfig = lastConfigName;
+    });
     final config = await ConfigService.loadConfig(currentConfig);
     _loadConfig(config);
-    await _launchMp3Tag();
+  } else {
+    // No configs exist, load 'default' from assets
+    setState(() {
+      currentConfig = 'default';
+    });
+    final config = await ConfigService.loadConfigFromAssets(currentConfig);
+    _loadConfig(config);
   }
+  await _launchMp3Tag();
+}
+
+
 
   Future<void> _launchMp3Tag() async {
     final mp3TagPath = Platform.environment['MP3TAG_PATH'];
@@ -72,44 +95,77 @@ class _MP3TaggerHomeState extends State<MP3TaggerHome> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('MP3TAG_PATH environment variable not set')),
+          const SnackBar(
+              content: Text('MP3TAG_PATH environment variable not set')),
         );
       }
     }
   }
 
-  void _loadConfig(List<Map<String, dynamic>> config) {
-    setState(() {
-      sections = config.map((data) => SectionModel.fromJson(data)).toList();
-      // sort sections by label, case insensitive
-      sections.sort((a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
-    });
-    _updateFilter();
-  }
+void _loadConfig(Map<String, dynamic> config) {
+  setState(() {
+    if (config.containsKey('sections')) {
+      sections = (config['sections'] as List)
+          .map((data) => SectionModel.fromJson(data))
+          .toList();
+      // Sort sections by label, case insensitive
+      sections.sort(
+          (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
+    } else {
+      sections = [];
+    }
+    if (config.containsKey('bpmRange')) {
+      _bpmRange[0] = (config['bpmRange'] as List)[0];
+      _bpmRange[1] = (config['bpmRange'] as List)[1];
+    }
+    if (config.containsKey('includeBpm')) {
+      _includeBpm = config['includeBpm'];
+    }
+    if (config.containsKey('excludeHold')) {
+      _excludeHold = config['excludeHold'];
+    }
+    if (config.containsKey('excludeDeselect')) {
+      _excludeDeselect = config['excludeDeselect'];
+    }
+  });
+  _updateFilter();
+}
 
-// This method now handles saving the current configuration
+
+
+
+// main.dart
+
 Future<void> _saveCurrentConfig() async {
-  final configData = sections.map((section) => section.toJson()).toList();
+  final configData = {
+    'sections': sections.map((section) => section.toJson()).toList(),
+    'bpmRange': _bpmRange,
+    'includeBpm': _includeBpm,
+    'excludeHold': _excludeHold,
+    'excludeDeselect': _excludeDeselect,
+  };
   await ConfigService.saveConfig(currentConfig, configData);
   ScaffoldMessenger.of(context).showSnackBar(
     const SnackBar(content: Text('Configuration saved successfully')),
   );
 }
 
+
+// main.dart
+
 Widget _buildConfigTools() {
   return ConfigManager(
     currentConfig: currentConfig,
-    onConfigLoaded: (configData) {
+    onConfigLoaded: (String configName, Map<String, dynamic> configData) {
       setState(() {
-        currentConfig = currentConfig;
-        sections = configData.map((data) => SectionModel.fromJson(data)).toList();
-        sections.sort((a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
+        currentConfig = configName; // Update currentConfig with the new name
       });
-      _updateFilter();
+      _loadConfig(configData); // Load the configuration data
     },
-    onSaveConfig: _saveCurrentConfig, // Pass the save method as a callback
+    onSaveConfig: _saveCurrentConfig,
   );
 }
+
 
   @override
   void dispose() {
@@ -136,8 +192,10 @@ Widget _buildConfigTools() {
     return MP3TagService.getBpmFilter(bpmRange);
   }
 
-  String getFilterFromSection(String currentFilter, SectionModel section, bool controlTogglePressed) {
-    return currentFilter + section.getFilter(controlTogglePressed: controlTogglePressed);
+  String getFilterFromSection(
+      String currentFilter, SectionModel section, bool controlTogglePressed) {
+    return currentFilter +
+        section.getFilter(controlTogglePressed: controlTogglePressed);
   }
 
   String cleanFilter(String filter) {
@@ -146,7 +204,7 @@ Widget _buildConfigTools() {
 
   void _updateFilter() {
     String filter = '';
-    
+
     if (_includeBpm) {
       filter = getBpmFilter(_bpmRange);
     }
@@ -171,7 +229,7 @@ Widget _buildConfigTools() {
     if (_excludeDeselect) {
       filter += ' AND DESELECT ABSENT';
     }
-    
+
     try {
       await MP3TagService.applyFilter(filter);
     } catch (e) {
@@ -183,30 +241,47 @@ Widget _buildConfigTools() {
     }
   }
 
+Widget _buildControlPanel() {
+  return Container(
+    constraints: const BoxConstraints(minWidth: 300, maxWidth: 600),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
 
-// Widget _buildConfigTools() {
-//     return ConfigManager(
-//       currentConfig: currentConfig,  // This is just the name (String)
-//       onConfigLoaded: (configData) {
-//         setState(() {
-//           // Update the current config name
-//           currentConfig = currentConfig;
-//           // Load the actual config data
-//           sections = configData.map((data) => SectionModel.fromJson(data)).toList();
-//           // sort sections by label, case insensitive
-//       sections.sort((a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
-//         });
-//         _updateFilter();
-//       },
-//     );
-//   }
-
-  Widget _buildControlPanel() {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 300, maxWidth: 600),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+IconButton(
+  icon: const Icon(Icons.settings),
+  onPressed: () async {
+    // Load the current configuration data
+    final configData = await ConfigService.loadConfig(currentConfig);
+    // Navigate to ConfigEditor
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ConfigEditor(
+          configName: currentConfig,
+          configData: configData,
+        ),
+      ),
+    );
+    if (result == true) {
+      // Reload configuration if changes were saved
+      final updatedConfig = await ConfigService.loadConfig(currentConfig);
+      _loadConfig(updatedConfig);
+    }
+  },
+),
+        // Include BPM Checkbox
+        _buildCheckbox(
+          'Include BPM',
+          _includeBpm,
+          (value) => setState(() {
+            _includeBpm = value ?? false;
+            _updateFilter();
+          }),
+        ),
+        // Conditionally display BPM controls
+        if (_includeBpm) ...[
+          const SizedBox(height: 16),
           const Text('BPM Range', style: headerTextStyle),
           const SizedBox(height: 8),
           SizedBox(
@@ -224,49 +299,48 @@ Widget _buildConfigTools() {
               },
             ),
           ),
-          const SizedBox(height: 16),
-          _buildCheckbox(
-            'Include BPM',
-            _includeBpm,
-            (value) => setState(() {
-              _includeBpm = value ?? false;
-              _updateFilter();
-            }),
+        ],
+        const SizedBox(height: 16),
+        // Other checkboxes
+        _buildCheckbox(
+          'Exclude Hold',
+          _excludeHold,
+          (value) => setState(() {
+            _excludeHold = value ?? false;
+            _updateFilter();
+          }),
+        ),
+        _buildCheckbox(
+          'Exclude Deselect',
+          _excludeDeselect,
+          (value) => setState(() {
+            _excludeDeselect = value ?? false;
+            _updateFilter();
+          }),
+        ),
+        const SizedBox(height: 24),
+        // Apply Filter Button
+        ElevatedButton(
+          onPressed: _applyFilter,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF476B6B),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           ),
-          _buildCheckbox(
-            'Exclude Hold',
-            _excludeHold,
-            (value) => setState(() {
-              _excludeHold = value ?? false;
-              _updateFilter();
-            }),
+          child: const Text(
+            'FILTER',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
-          _buildCheckbox(
-            'Exclude Deselect',
-            _excludeDeselect,
-            (value) => setState(() {
-              _excludeDeselect = value ?? false;
-              _updateFilter();
-            }),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _applyFilter,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF476B6B),
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            ),
-            child: const Text(
-              'FILTER',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
+        ),
+        const SizedBox(height: 24),
+        // Filter TextField
+        Expanded(
+          child: SizedBox(
             width: 600,
             child: TextField(
               controller: _filterController,
-              maxLines: 8,
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
               style: filterTextStyle,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
@@ -276,12 +350,14 @@ Widget _buildConfigTools() {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
-  Widget _buildCheckbox(String label, bool value, ValueChanged<bool?> onChanged) {
+  Widget _buildCheckbox(
+      String label, bool value, ValueChanged<bool?> onChanged) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: CheckboxListTile(
@@ -296,71 +372,67 @@ Widget _buildConfigTools() {
     );
   }
 
- @override
+  @override
   Widget build(BuildContext context) {
-  final ScrollController verticalScrollController = ScrollController();
-  final ScrollController horizontalScrollController = ScrollController();
+    final ScrollController verticalScrollController = ScrollController();
+    final ScrollController horizontalScrollController = ScrollController();
 
-  return Scaffold(
-    
-    appBar: AppBar(
-      title: const Text('MP3 Tagger'),
-      actions: [
-        _buildConfigTools(),
-      ],
-    ),
-    body: Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Scrollable sections with both vertical and horizontal scrolling
-Expanded(
-  child: Scrollbar(
-    controller: verticalScrollController,
-    thumbVisibility: true,
-    thickness: 16.0, // Windows-style thickness
-    child: SingleChildScrollView(
-      controller: verticalScrollController,
-      scrollDirection: Axis.vertical,
-      child: Scrollbar(
-        controller: horizontalScrollController,
-        thumbVisibility: true,
-        thickness: 16.0, // Windows-style thickness
-        child: SingleChildScrollView(
-          controller: horizontalScrollController,
-          scrollDirection: Axis.horizontal,
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ...sections.map((section) => SectionWidget(
-                      section: section,
-                      onChanged: _updateFilter,
-                    )),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ),
-  ),
-),
-
-          
-          // Fixed spacing between sections and control panel
-          const SizedBox(width: 32),
-          
-          // Fixed-width control panel
-          SizedBox(
-            width: 300,
-            child: _buildControlPanel(),
-          ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('MP3 Tagger'),
+        actions: [
+          _buildConfigTools(),
         ],
       ),
-    ),
-  );
-}
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Scrollable sections with both vertical and horizontal scrolling
+            Expanded(
+              child: Scrollbar(
+                controller: verticalScrollController,
+                thumbVisibility: true,
+                thickness: 16.0, // Windows-style thickness
+                child: SingleChildScrollView(
+                  controller: verticalScrollController,
+                  scrollDirection: Axis.vertical,
+                  child: Scrollbar(
+                    controller: horizontalScrollController,
+                    thumbVisibility: true,
+                    thickness: 16.0, // Windows-style thickness
+                    child: SingleChildScrollView(
+                      controller: horizontalScrollController,
+                      scrollDirection: Axis.horizontal,
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ...sections.map((section) => SectionWidget(
+                                  section: section,
+                                  onChanged: _updateFilter,
+                                )),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
+            // Fixed spacing between sections and control panel
+            const SizedBox(width: 32),
 
+            // Fixed-width control panel
+            SizedBox(
+              width: 425,
+              child: _buildControlPanel(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
