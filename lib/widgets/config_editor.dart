@@ -82,7 +82,10 @@ class _ConfigEditorState extends State<ConfigEditor> {
           ),
         ],
       ),
-      body: ListView(
+      body: Center(
+  child: ConstrainedBox(
+    constraints: BoxConstraints(maxWidth: 800), // or your desired width
+    child: ListView(
         children: [
           ...sections.map((section) => _buildSectionTile(section)).toList(),
           ListTile(
@@ -92,6 +95,8 @@ class _ConfigEditorState extends State<ConfigEditor> {
           ),
         ],
       ),
+    ),
+  ),
     );
   }
 
