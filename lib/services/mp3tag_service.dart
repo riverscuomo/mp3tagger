@@ -84,6 +84,24 @@ class MP3TagService {
     return filter;
   }
 
+  static String getCpmFilter(List<double> cpmRange) {
+  final cpmLow = cpmRange[0].round();
+  final cpmHi = cpmRange[1].round();
+  
+  // var filter = '(NOT CPM LESS $cpmLow AND NOT CPM GREATER $cpmHi) AND ';
+
+  var filter = '((CHORDS_PER_MINUTE ABSENT) OR (NOT CHORDS_PER_MINUTE LESS $cpmLow)) AND ';
+  
+  // // Secondary CPM range (doubled or halved)
+  // final cpmLow2 = cpmLow > 50 ? (cpmLow / 2).round() : (cpmLow * 2).round();
+  // final cpmHi2 = cpmLow > 50 ? (cpmHi / 2).round() : (cpmHi * 2).round();
+  
+  // filter += ' OR (NOT CPM LESS $cpmLow2 AND NOT CPM GREATER $cpmHi2)) AND ';
+  
+  return filter;
+}
+
+
   static String cleanFilter(String filter) {
     return filter
       .trim()

@@ -10,6 +10,9 @@ python/build/
 # We can ignore dist since your exe is in assets
 python/dist/
 
+# fvm
+.fvm/
+
 
 .env
 .vscode/
