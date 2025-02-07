@@ -20,3 +20,5 @@ Before you can run the `MP3 Tagger` script, there are some pre-requisites that a
 ### Download and install the Mp3Tag Windows Application
 
 https://www.mp3tag.de/en/
+
+### Run the code as a Windows app, not android, iOS or web.
